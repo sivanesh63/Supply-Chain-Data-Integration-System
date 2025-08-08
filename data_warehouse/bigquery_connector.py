@@ -6,13 +6,17 @@ from utils.logger import log_pipeline_step, log_data_quality_check
 from config import PROJECT_ID, DATASET_ID, LOCATION
 
 class BigQueryConnector:
-
+    """
+    Handles BigQuery operations including data loading and star schema management
+    """
+    
     def __init__(self):
         self.logger = log_pipeline_step("BigQueryConnector", "STARTED")
         self.project_id = PROJECT_ID
         self.dataset_id = DATASET_ID
         self.location = LOCATION
-
+        
+        # Initialize BigQuery client
         try:
             # Try to use service account if available
             if os.path.exists('service-account-key.json'):
@@ -34,7 +38,9 @@ class BigQueryConnector:
             self.client = None
     
     def create_dataset(self):
-
+        """
+        Create the supply chain analytics dataset
+        """
         try:
             self.logger.info(f"Creating dataset: {self.dataset_id}")
             
@@ -51,7 +57,9 @@ class BigQueryConnector:
             return False
     
     def create_star_schema_tables(self):
-
+        """
+        Create star schema tables: fact tables and dimension tables
+        """
         try:
             self.logger.info("Creating star schema tables...")
             
@@ -69,7 +77,9 @@ class BigQueryConnector:
             return False
     
     def _create_dimensions(self):
-
+        """
+        Create dimension tables
+        """
         # Products dimension
         products_schema = [
             bigquery.SchemaField("product_id", "INTEGER", mode="REQUIRED"),
@@ -129,7 +139,9 @@ class BigQueryConnector:
         self._create_table("dim_locations", locations_schema, clustering_fields=["country", "state"])
     
     def _create_facts(self):
-
+        """
+        Create fact tables
+        """
         # Orders fact table
         orders_fact_schema = [
             bigquery.SchemaField("order_id", "STRING", mode="REQUIRED"),
@@ -197,7 +209,9 @@ class BigQueryConnector:
                           clustering_fields=["customer_id", "product_id"])
     
     def _create_table(self, table_name, schema, partitioning_field=None, clustering_fields=None):
-
+        """
+        Create a table with the specified schema
+        """
         try:
             table_id = f"{self.project_id}.{self.dataset_id}.{table_name}"
             table = bigquery.Table(table_id, schema=schema)
@@ -221,7 +235,9 @@ class BigQueryConnector:
             self.logger.error(f"Error creating table {table_name}: {str(e)}")
     
     def load_data_to_bigquery(self, data_dict):
-
+        """
+        Load data from DataFrames to BigQuery tables
+        """
         try:
             self.logger.info("Loading data to BigQuery...")
             
@@ -246,7 +262,9 @@ class BigQueryConnector:
             return False
     
     def _load_products_dimension(self, products_df):
-
+        """
+        Load products data to dimension table
+        """
         try:
             # Prepare data for BigQuery
             products_df['created_date'] = pd.Timestamp.now()
@@ -273,7 +291,9 @@ class BigQueryConnector:
             self.logger.error(f"Error loading products dimension: {str(e)}")
     
     def _load_orders_fact(self, orders_df):
-
+        """
+        Load orders data to fact table
+        """
         try:
             # Prepare data for BigQuery
             orders_df['created_date'] = pd.Timestamp.now()
@@ -311,7 +331,9 @@ class BigQueryConnector:
             self.logger.error(f"Error loading orders fact: {str(e)}")
     
     def _load_inventory_fact(self, inventory_df):
-
+        """
+        Load inventory data to fact table
+        """
         try:
             # Prepare data for BigQuery
             inventory_df['created_date'] = pd.Timestamp.now()
@@ -342,7 +364,9 @@ class BigQueryConnector:
             self.logger.error(f"Error loading inventory fact: {str(e)}")
     
     def _load_returns_fact(self, returns_df):
-
+        """
+        Load returns data to fact table
+        """
         try:
             # Prepare data for BigQuery
             returns_df['created_date'] = pd.Timestamp.now()
@@ -373,7 +397,9 @@ class BigQueryConnector:
             self.logger.error(f"Error loading returns fact: {str(e)}")
     
     def create_data_marts(self):
-
+        """
+        Create specialized data marts for analytics
+        """
         try:
             self.logger.info("Creating data marts...")
             
@@ -397,7 +423,9 @@ class BigQueryConnector:
             return False
     
     def _create_vendor_performance_mart(self):
-
+        """
+        Create vendor performance data mart
+        """
         query = """
         CREATE OR REPLACE TABLE `{project_id}.{dataset_id}.mart_vendor_performance` AS
         SELECT 
@@ -422,7 +450,9 @@ class BigQueryConnector:
         self._execute_query(query.format(project_id=self.project_id, dataset_id=self.dataset_id))
     
     def _create_inventory_analysis_mart(self):
-
+        """
+        Create inventory analysis data mart
+        """
         query = """
         CREATE OR REPLACE TABLE `{project_id}.{dataset_id}.mart_inventory_analysis` AS
         SELECT 
@@ -442,7 +472,9 @@ class BigQueryConnector:
         self._execute_query(query.format(project_id=self.project_id, dataset_id=self.dataset_id))
     
     def _create_fulfillment_analytics_mart(self):
-
+        """
+        Create fulfillment analytics data mart
+        """
         query = """
         CREATE OR REPLACE TABLE `{project_id}.{dataset_id}.mart_fulfillment_analytics` AS
         SELECT 
@@ -461,7 +493,9 @@ class BigQueryConnector:
         self._execute_query(query.format(project_id=self.project_id, dataset_id=self.dataset_id))
     
     def _create_category_performance_mart(self):
-
+        """
+        Create category performance data mart
+        """
         query = """
         CREATE OR REPLACE TABLE `{project_id}.{dataset_id}.mart_category_performance` AS
         SELECT 
@@ -487,7 +521,9 @@ class BigQueryConnector:
         self._execute_query(query.format(project_id=self.project_id, dataset_id=self.dataset_id))
     
     def _execute_query(self, query):
-
+        """
+        Execute a BigQuery SQL query
+        """
         try:
             job = self.client.query(query)
             job.result()

@@ -10,6 +10,10 @@ kaggle==1.5.16
 python-dotenv==1.0.0
 schedule==1.2.0
 logging==0.4.9.6
+fastapi==0.104.1
+uvicorn==0.24.0
+flask==3.0.0
+flask-cors==4.0.0
 datetime
 json
 os

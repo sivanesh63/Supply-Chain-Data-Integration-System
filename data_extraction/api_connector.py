@@ -1,218 +1,218 @@
 import requests
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
-import random
+import json
+from datetime import datetime
 from utils.logger import log_pipeline_step, log_data_quality_check
-from config import FAKE_STORE_API_BASE_URL, INVENTORY_SIMULATION_DAYS, RESTOCKING_FREQUENCY, DEMAND_VARIABILITY
+from config import CUSTOM_API_BASE_URL, CUSTOM_API_ENDPOINTS
 
-class APIConnector:
+class CustomAPIConnector:
     """
-    Handles API data extraction and inventory simulation
+    Handles data extraction from custom API endpoints
     """
     
     def __init__(self):
-        self.logger = log_pipeline_step("APIConnector", "STARTED")
-        self.base_url = FAKE_STORE_API_BASE_URL
+        self.logger = log_pipeline_step("CustomAPIConnector", "STARTED")
+        self.base_url = CUSTOM_API_BASE_URL
+        self.endpoints = CUSTOM_API_ENDPOINTS
         
-    def get_products(self):
+    def get_orders_data(self):
         """
-        Fetch products from Fake Store API
+        Fetch orders data from custom API
         """
         try:
-            self.logger.info("Fetching products from Fake Store API...")
+            self.logger.info("Fetching orders data from custom API...")
             
-            response = requests.get(f"{self.base_url}/products")
+            response = requests.get(f"{self.base_url}{self.endpoints['orders']}")
             response.raise_for_status()
             
-            products = response.json()
-            
-            # Convert to DataFrame
-            products_df = pd.DataFrame(products)
+            data = response.json()
+            orders_df = pd.DataFrame(data)
             
             # Data quality checks
-            self._validate_products_data(products_df)
+            self._validate_orders_data(orders_df)
             
-            self.logger.info(f"Products fetched successfully. Count: {len(products_df)}")
-            return products_df
+            # Transform data
+            orders_df = self._transform_orders_data(orders_df)
+            
+            self.logger.info(f"Orders data fetched successfully. Shape: {orders_df.shape}")
+            return orders_df
             
         except Exception as e:
-            self.logger.error(f"Error fetching products: {str(e)}")
+            self.logger.error(f"Error fetching orders data: {str(e)}")
             return None
     
-    def get_categories(self):
+    def get_returns_data(self):
         """
-        Fetch product categories from Fake Store API
+        Fetch returns data from custom API
         """
         try:
-            self.logger.info("Fetching categories from Fake Store API...")
+            self.logger.info("Fetching returns data from custom API...")
             
-            response = requests.get(f"{self.base_url}/products/categories")
+            response = requests.get(f"{self.base_url}{self.endpoints['returns']}")
             response.raise_for_status()
             
-            categories = response.json()
+            data = response.json()
+            returns_df = pd.DataFrame(data)
             
-            # Convert to DataFrame
-            categories_df = pd.DataFrame(categories, columns=['category'])
+            # Data quality checks
+            self._validate_returns_data(returns_df)
             
-            self.logger.info(f"Categories fetched successfully. Count: {len(categories_df)}")
-            return categories_df
+            # Transform data
+            returns_df = self._transform_returns_data(returns_df)
+            
+            self.logger.info(f"Returns data fetched successfully. Shape: {returns_df.shape}")
+            return returns_df
             
         except Exception as e:
-            self.logger.error(f"Error fetching categories: {str(e)}")
+            self.logger.error(f"Error fetching returns data: {str(e)}")
             return None
     
-    def simulate_inventory(self, products_df, days=INVENTORY_SIMULATION_DAYS):
+    def get_people_data(self):
         """
-        Simulate 30-day inventory activity with daily demand, restocking, and price changes
+        Fetch people data from custom API
         """
         try:
-            self.logger.info(f"Starting inventory simulation for {days} days...")
+            self.logger.info("Fetching people data from custom API...")
             
-            inventory_data = []
-            current_date = datetime.now() - timedelta(days=days)
+            response = requests.get(f"{self.base_url}{self.endpoints['people']}")
+            response.raise_for_status()
             
-            for day in range(days):
-                date = current_date + timedelta(days=day)
-                
-                for _, product in products_df.iterrows():
-                    # Base demand (random between 1-10 units per day)
-                    base_demand = random.randint(1, 10)
-                    
-                    # Add variability to demand
-                    demand_variability = random.uniform(1 - DEMAND_VARIABILITY, 1 + DEMAND_VARIABILITY)
-                    daily_demand = max(0, int(base_demand * demand_variability))
-                    
-                    # Get current stock level (initialize if first day)
-                    if day == 0:
-                        current_stock = random.randint(50, 200)  # Initial stock
-                    else:
-                        # Get previous day's stock
-                        prev_record = next((r for r in inventory_data if r['product_id'] == product['id'] and r['date'] == date - timedelta(days=1)), None)
-                        current_stock = prev_record['stock_level'] if prev_record else random.randint(50, 200)
-                    
-                    # Calculate new stock level
-                    new_stock = current_stock - daily_demand
-                    
-                    # Restocking logic (every 7 days)
-                    if day % RESTOCKING_FREQUENCY == 0:
-                        restock_amount = random.randint(50, 100)
-                        new_stock += restock_amount
-                        restocked = True
-                    else:
-                        restock_amount = 0
-                        restocked = False
-                    
-                    # Price changes (random 5% variation)
-                    price_change = random.uniform(0.95, 1.05)
-                    new_price = product['price'] * price_change
-                    
-                    # Create inventory record
-                    inventory_record = {
-                        'date': date,
-                        'product_id': product['id'],
-                        'product_name': product['title'],
-                        'category': product['category'],
-                        'daily_demand': daily_demand,
-                        'stock_level': max(0, new_stock),
-                        'restock_amount': restock_amount,
-                        'restocked': restocked,
-                        'price': new_price,
-                        'original_price': product['price'],
-                        'price_change_pct': ((new_price - product['price']) / product['price']) * 100
-                    }
-                    
-                    inventory_data.append(inventory_record)
+            data = response.json()
+            people_df = pd.DataFrame(data)
             
-            # Convert to DataFrame
-            inventory_df = pd.DataFrame(inventory_data)
+            # Data quality checks
+            self._validate_people_data(people_df)
             
-            # Calculate additional metrics
-            inventory_df = self._calculate_inventory_metrics(inventory_df)
+            # Transform data
+            people_df = self._transform_people_data(people_df)
             
-            self.logger.info(f"Inventory simulation completed. Records: {len(inventory_df)}")
-            return inventory_df
+            self.logger.info(f"People data fetched successfully. Shape: {people_df.shape}")
+            return people_df
             
         except Exception as e:
-            self.logger.error(f"Error in inventory simulation: {str(e)}")
+            self.logger.error(f"Error fetching people data: {str(e)}")
             return None
     
-    def _validate_products_data(self, df):
+    def get_analytics_data(self):
         """
-        Validate products data quality
+        Fetch analytics data from custom API
+        """
+        try:
+            self.logger.info("Fetching analytics data from custom API...")
+            
+            response = requests.get(f"{self.base_url}{self.endpoints['analytics']}")
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            self.logger.info("Analytics data fetched successfully")
+            return data
+            
+        except Exception as e:
+            self.logger.error(f"Error fetching analytics data: {str(e)}")
+            return None
+    
+    def _validate_orders_data(self, df):
+        """
+        Validate Orders data quality
+        """
+        # Check for missing values
+        missing_pct = df.isnull().sum().sum() / (df.shape[0] * df.shape[1])
+        if missing_pct > 0.05:  # 5% threshold
+            log_data_quality_check("Orders Missing Data", "WARNING", f"Missing data: {missing_pct:.2%}")
+        else:
+            log_data_quality_check("Orders Missing Data", "PASS", f"Missing data: {missing_pct:.2%}")
+        
+        # Check for required columns
+        required_columns = ['Order ID', 'Order Date', 'Customer ID', 'Product ID']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            log_data_quality_check("Orders Required Columns", "FAIL", f"Missing columns: {missing_columns}")
+        else:
+            log_data_quality_check("Orders Required Columns", "PASS")
+    
+    def _validate_returns_data(self, df):
+        """
+        Validate Returns data quality
         """
         # Check for missing values
         missing_pct = df.isnull().sum().sum() / (df.shape[0] * df.shape[1])
         if missing_pct > 0.05:
-            log_data_quality_check("Products Missing Data", "WARNING", f"Missing data: {missing_pct:.2%}")
+            log_data_quality_check("Returns Missing Data", "WARNING", f"Missing data: {missing_pct:.2%}")
         else:
-            log_data_quality_check("Products Missing Data", "PASS", f"Missing data: {missing_pct:.2%}")
-        
-        # Check for required columns
-        required_columns = ['id', 'title', 'price', 'category']
-        missing_columns = [col for col in required_columns if col not in df.columns]
-        if missing_columns:
-            log_data_quality_check("Products Required Columns", "FAIL", f"Missing columns: {missing_columns}")
-        else:
-            log_data_quality_check("Products Required Columns", "PASS")
-        
-        # Check for valid prices
-        if 'price' in df.columns:
-            invalid_prices = df[df['price'] <= 0].shape[0]
-            if invalid_prices > 0:
-                log_data_quality_check("Products Price Validation", "WARNING", f"Invalid prices: {invalid_prices}")
-            else:
-                log_data_quality_check("Products Price Validation", "PASS")
+            log_data_quality_check("Returns Missing Data", "PASS", f"Missing data: {missing_pct:.2%}")
     
-    def _calculate_inventory_metrics(self, df):
+    def _validate_people_data(self, df):
         """
-        Calculate additional inventory metrics
+        Validate People data quality
         """
-        # Calculate days of inventory remaining
-        df['days_of_inventory'] = np.where(
-            df['daily_demand'] > 0,
-            df['stock_level'] / df['daily_demand'],
-            float('inf')
-        )
+        # Check for missing values
+        missing_pct = df.isnull().sum().sum() / (df.shape[0] * df.shape[1])
+        if missing_pct > 0.05:
+            log_data_quality_check("People Missing Data", "WARNING", f"Missing data: {missing_pct:.2%}")
+        else:
+            log_data_quality_check("People Missing Data", "PASS", f"Missing data: {missing_pct:.2%}")
+    
+    def _transform_orders_data(self, df):
+        """
+        Transform Orders data for analysis
+        """
+        # Convert date columns
+        date_columns = ['Order Date', 'Ship Date']
+        for col in date_columns:
+            if col in df.columns:
+                df[col] = pd.to_datetime(df[col])
         
-        # Calculate stockout risk (days of inventory < 3)
-        df['stockout_risk'] = df['days_of_inventory'] < 3
+        # Calculate lead time
+        if 'Order Date' in df.columns and 'Ship Date' in df.columns:
+            df['Lead Time (Days)'] = (df['Ship Date'] - df['Order Date']).dt.days
         
-        # Calculate inventory turnover (annualized)
-        df['annualized_turnover'] = np.where(
-            df['stock_level'] > 0,
-            (df['daily_demand'] * 365) / df['stock_level'],
-            0
-        )
+        # Add year, month, quarter for time-based analysis
+        if 'Order Date' in df.columns:
+            df['Order Year'] = df['Order Date'].dt.year
+            df['Order Month'] = df['Order Date'].dt.month
+            df['Order Quarter'] = df['Order Date'].dt.quarter
         
-        # Calculate fill rate
-        df['fill_rate'] = np.where(
-            df['daily_demand'] > 0,
-            np.minimum(1.0, df['stock_level'] / df['daily_demand']),
-            1.0
-        )
+        # Calculate order value if not present
+        if 'Sales' in df.columns and 'Quantity' in df.columns:
+            df['Order Value'] = df['Sales'] * df['Quantity']
+        elif 'Sales' in df.columns:
+            df['Order Value'] = df['Sales']
         
         return df
     
-    def get_all_api_data(self):
+    def _transform_returns_data(self, df):
         """
-        Get all API data including products, categories, and simulated inventory
+        Transform Returns data for analysis
+        """
+        # Convert date columns
+        if 'Order Date' in df.columns:
+            df['Return Date'] = pd.to_datetime(df['Order Date'])
+        
+        return df
+    
+    def _transform_people_data(self, df):
+        """
+        Transform People data for analysis
+        """
+        # Convert date columns if they exist
+        date_columns = ['First Order Date', 'Last Order Date']
+        for col in date_columns:
+            if col in df.columns:
+                df[col] = pd.to_datetime(df[col])
+        
+        return df
+    
+    def get_all_data(self):
+        """
+        Fetch all data from custom API endpoints
         """
         data = {}
         
-        # Get products
-        products_df = self.get_products()
-        if products_df is not None:
-            data['products'] = products_df
-            
-            # Simulate inventory based on products
-            inventory_df = self.simulate_inventory(products_df)
-            if inventory_df is not None:
-                data['inventory'] = inventory_df
-        
-        # Get categories
-        categories_df = self.get_categories()
-        if categories_df is not None:
-            data['categories'] = categories_df
+        # Fetch each dataset
+        data['orders'] = self.get_orders_data()
+        data['returns'] = self.get_returns_data()
+        data['people'] = self.get_people_data()
+        data['analytics'] = self.get_analytics_data()
         
         return data 

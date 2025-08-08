@@ -4,7 +4,9 @@ from datetime import datetime
 from config import LOG_LEVEL, LOG_FILE
 
 def setup_logger(name="supply_chain_pipeline"):
-
+    """
+    Set up a logger with file and console handlers
+    """
     # Create logs directory if it doesn't exist
     os.makedirs("logs", exist_ok=True)
     
@@ -37,7 +39,9 @@ def setup_logger(name="supply_chain_pipeline"):
     return logger
 
 def log_pipeline_step(step_name, status="STARTED", details=None):
-
+    """
+    Log pipeline step execution
+    """
     logger = setup_logger()
     message = f"Pipeline Step: {step_name} - {status}"
     if details:
@@ -55,7 +59,9 @@ def log_pipeline_step(step_name, status="STARTED", details=None):
     return logger
 
 def log_data_quality_check(check_name, result, details=None):
-
+    """
+    Log data quality check results
+    """
     logger = setup_logger()
     message = f"Data Quality Check: {check_name} - Result: {result}"
     if details:
@@ -71,7 +77,9 @@ def log_data_quality_check(check_name, result, details=None):
     return logger
 
 def log_alert(alert_type, message, severity="INFO"):
-
+    """
+    Log alerts for monitoring
+    """
     logger = setup_logger()
     alert_message = f"ALERT [{alert_type}]: {message}"
     

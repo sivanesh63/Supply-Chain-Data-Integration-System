@@ -32,55 +32,109 @@ class SupplyChainDashboard:
         st.title(DASHBOARD_TITLE)
         st.markdown("---")
     
-    def run_dashboard(self, data_dict, metrics_dict):
+    def run_dashboard(self, data_dict, metrics_dict, using_real_data):
         """
         Run the main dashboard
         """
-        try:
-            # Sidebar for filters
-            self.create_sidebar(data_dict)
-            
-            # Main dashboard content
-            col1, col2, col3, col4 = st.columns(4)
-            
-            # KPI Cards
-            with col1:
-                self.display_kpi_card("Total Orders", metrics_dict.get('lead_time', {}).get('total_orders', 0), "📦")
-            
-            with col2:
-                avg_lead_time = metrics_dict.get('lead_time', {}).get('mean_lead_time', 0)
-                self.display_kpi_card("Avg Lead Time", f"{avg_lead_time:.1f} days", "⏱️")
-            
-            with col3:
-                fill_rate = metrics_dict.get('fill_rate', {}).get('mean_fill_rate', 0)
-                self.display_kpi_card("Fill Rate", f"{fill_rate:.1%}", "📈")
-            
-            with col4:
-                turnover = metrics_dict.get('inventory_turnover', {}).get('mean_turnover', 0)
-                self.display_kpi_card("Inventory Turnover", f"{turnover:.1f}x", "🔄")
-            
-            st.markdown("---")
-            
-            # Charts section
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                self.display_lead_time_chart(data_dict.get('orders'))
-                self.display_inventory_trends(data_dict.get('inventory'))
-            
-            with col2:
-                self.display_category_performance(data_dict.get('orders'), data_dict.get('inventory'))
-                self.display_fill_rate_analysis(data_dict.get('inventory'))
-            
-            # Alerts section
+        self.logger.info("Starting dashboard...")
+        
+        # Setup page
+        self.setup_page()
+        
+        # Show data source indicator
+        if using_real_data:
+            st.success("✅ Using real data from test.xlsx via API")
+            st.info(f"📊 Loaded {len(data_dict['orders'])} orders, {len(data_dict.get('returns', []))} returns, and {len(data_dict.get('people', []))} customers from test.xlsx")
+        else:
+            st.warning("⚠️ Using sample data (API not available)")
+        
+        # Create sidebar
+        self.create_sidebar(data_dict)
+        
+        # Main content area
+        col1, col2, col3, col4 = st.columns(4)
+        
+        # KPI Cards
+        with col1:
+            if 'orders' in data_dict and len(data_dict['orders']) > 0:
+                total_orders = len(data_dict['orders'])
+                self.display_kpi_card("📦 Total Orders", f"{total_orders:,}", "📦")
+            else:
+                self.display_kpi_card("📦 Total Orders", "N/A", "📦")
+        
+        with col2:
+            if 'orders' in data_dict and len(data_dict['orders']) > 0 and 'Sales' in data_dict['orders'].columns:
+                total_sales = data_dict['orders']['Sales'].sum()
+                self.display_kpi_card("💰 Total Sales", f"${total_sales:,.2f}", "💰")
+            else:
+                self.display_kpi_card("💰 Total Sales", "N/A", "💰")
+        
+        with col3:
+            if 'orders' in data_dict and len(data_dict['orders']) > 0 and 'Lead Time (Days)' in data_dict['orders'].columns:
+                avg_lead_time = data_dict['orders']['Lead Time (Days)'].mean()
+                self.display_kpi_card("⏱️ Avg Lead Time", f"{avg_lead_time:.1f} days", "⏱️")
+            else:
+                self.display_kpi_card("⏱️ Avg Lead Time", "N/A", "⏱️")
+        
+        with col4:
+            if 'inventory' in data_dict and len(data_dict['inventory']) > 0 and 'fill_rate' in data_dict['inventory'].columns:
+                avg_fill_rate = data_dict['inventory']['fill_rate'].mean() * 100
+                self.display_kpi_card("📈 Fill Rate", f"{avg_fill_rate:.1f}%", "📈")
+            else:
+                self.display_kpi_card("📈 Fill Rate", "N/A", "📈")
+        
+        # Charts Section
+        st.subheader("📊 Analytics Dashboard")
+        
+        # Create tabs for different analytics
+        tab1, tab2, tab3, tab4, tab5 = st.tabs(["📈 Lead Time", "📦 Inventory", "🏷️ Categories", "⚠️ Alerts", "📋 Reports"])
+        
+        with tab1:
+            if 'orders' in data_dict and len(data_dict['orders']) > 0:
+                self.display_lead_time_chart(data_dict['orders'])
+            else:
+                st.warning("No orders data available")
+        
+        with tab2:
+            if 'inventory' in data_dict and len(data_dict['inventory']) > 0:
+                self.display_inventory_trends(data_dict['inventory'])
+            else:
+                st.warning("No inventory data available")
+        
+        with tab3:
+            if 'orders' in data_dict and len(data_dict['orders']) > 0 and 'inventory' in data_dict and len(data_dict['inventory']) > 0:
+                self.display_category_performance(data_dict['orders'], data_dict['inventory'])
+            else:
+                st.warning("No category data available")
+        
+        with tab4:
             self.display_alerts(data_dict)
-            
-            # Detailed analytics
-            self.display_detailed_analytics(data_dict, metrics_dict)
-            
-        except Exception as e:
-            self.logger.error(f"Error running dashboard: {str(e)}")
-            st.error(f"Error running dashboard: {str(e)}")
+        
+        with tab5:
+            self.display_reports(data_dict, metrics_dict)
+        
+        # Detailed Analytics Section
+        # st.subheader("🔍 Detailed Analytics")
+        
+        # # Create tabs for detailed analytics
+        # detail_tab1, detail_tab2, detail_tab3 = st.tabs(["📊 Performance Metrics", "📦 Inventory Analysis", "🚚 Fulfillment Analytics"])
+        
+        # with detail_tab1:
+        #     self.display_performance_metrics(metrics_dict)
+        
+        # with detail_tab2:
+        #     if 'inventory' in data_dict and len(data_dict['inventory']) > 0:
+        #         self.display_inventory_analysis(data_dict['inventory'])
+        #     else:
+        #         st.warning("No inventory data available")
+        
+        # with detail_tab3:
+        #     if 'orders' in data_dict and len(data_dict['orders']) > 0:
+        #         self.display_fulfillment_analytics(data_dict['orders'])
+        #     else:
+        #         st.warning("No orders data available")
+        
+        # self.logger.info("Dashboard completed successfully")
     
     def create_sidebar(self, data_dict):
         """
@@ -447,11 +501,89 @@ def main():
     # Initialize dashboard
     dashboard = SupplyChainDashboard()
     
-    # For demo purposes, we'll create sample data
-    # In a real implementation, this would come from the data pipeline
+    # Load real data from the Flask API (which serves test.xlsx data)
+    try:
+        import requests
+        import json
+        
+        # API base URL
+        api_base_url = "http://localhost:5000"
+        
+        print("🔄 Loading data from Flask API...")
+        
+        # Load orders data from API
+        orders_response = requests.get(f"{api_base_url}/api/orders")
+        if orders_response.status_code == 200:
+            orders_data = orders_response.json()['data']
+            sample_orders = pd.DataFrame(orders_data)
+            print(f"✅ Loaded {len(sample_orders)} orders from test.xlsx via API")
+        else:
+            print("❌ Failed to load orders from API, using sample data")
+            sample_orders = create_sample_orders()
+        
+        # Load returns data from API
+        returns_response = requests.get(f"{api_base_url}/api/returns")
+        if returns_response.status_code == 200:
+            returns_data = returns_response.json()['data']
+            sample_returns = pd.DataFrame(returns_data)
+            print(f"✅ Loaded {len(sample_returns)} returns from test.xlsx via API")
+        else:
+            print("❌ Failed to load returns from API, using sample data")
+            sample_returns = create_sample_returns()
+        
+        # Load people data from API
+        people_response = requests.get(f"{api_base_url}/api/people")
+        if people_response.status_code == 200:
+            people_data = people_response.json()['data']
+            sample_people = pd.DataFrame(people_data)
+            print(f"✅ Loaded {len(sample_people)} people from test.xlsx via API")
+        else:
+            print("❌ Failed to load people from API, using sample data")
+            sample_people = create_sample_people()
+        
+        # Create inventory data (since test.xlsx doesn't have inventory, we'll create simulated data)
+        sample_inventory = create_sample_inventory()
+        
+        # Check if we're using real data from test.xlsx
+        using_real_data = (orders_response.status_code == 200 and 
+                          returns_response.status_code == 200 and 
+                          people_response.status_code == 200)
+        
+        if using_real_data:
+            print("🎉 Successfully loaded all data from test.xlsx via Flask API!")
+        else:
+            print("⚠️ Some data failed to load from API, using sample data as fallback")
+        
+    except Exception as e:
+        print(f"❌ Error loading data from API: {str(e)}")
+        print("Using sample data instead")
+        # Fallback to sample data
+        sample_orders = create_sample_orders()
+        sample_returns = create_sample_returns()
+        sample_people = create_sample_people()
+        sample_inventory = create_sample_inventory()
+        using_real_data = False
     
-    # Sample data creation
-    sample_orders = pd.DataFrame({
+    data_dict = {
+        'orders': sample_orders,
+        'inventory': sample_inventory,
+        'returns': sample_returns,
+        'people': sample_people
+    }
+    
+    # Calculate sample metrics
+    from data_processing.supply_chain_metrics import SupplyChainMetrics
+    metrics_calculator = SupplyChainMetrics()
+    metrics_dict = metrics_calculator.calculate_all_metrics(
+        sample_orders, sample_inventory, sample_returns
+    )
+    
+    # Run dashboard with data source indicator
+    dashboard.run_dashboard(data_dict, metrics_dict, using_real_data)
+
+def create_sample_orders():
+    """Create sample orders data as fallback"""
+    return pd.DataFrame({
         'Order ID': [f'ORD_{i}' for i in range(1, 101)],
         'Order Date': pd.date_range('2024-01-01', periods=100, freq='D'),
         'Ship Date': pd.date_range('2024-01-03', periods=100, freq='D'),
@@ -463,40 +595,40 @@ def main():
         'Profit': np.random.uniform(10, 200, 100),
         'Lead Time (Days)': np.random.randint(1, 15, 100)
     })
-    
-    sample_inventory = pd.DataFrame({
-        'date': pd.date_range('2024-01-01', periods=30, freq='D'),
-        'product_id': [f'PROD_{i%10}' for i in range(1, 301)],
-        'category': ['Electronics', 'Clothing', 'Home', 'Sports'] * 75,
-        'stock_level': np.random.randint(10, 200, 300),
-        'daily_demand': np.random.randint(1, 10, 300),
-        'fill_rate': np.random.uniform(0.7, 1.0, 300),
-        'annualized_turnover': np.random.uniform(2, 12, 300),
-        'stockout_risk': np.random.choice([True, False], 300, p=[0.1, 0.9])
-    })
-    
-    sample_returns = pd.DataFrame({
+
+def create_sample_returns():
+    """Create sample returns data as fallback"""
+    return pd.DataFrame({
         'Return Date': pd.date_range('2024-01-01', periods=20, freq='D'),
         'Order ID': [f'ORD_{i}' for i in np.random.randint(1, 101, 20)],
         'Customer ID': [f'CUST_{i%20}' for i in range(1, 21)],
         'Product ID': [f'PROD_{i%10}' for i in range(1, 21)]
     })
-    
-    data_dict = {
-        'orders': sample_orders,
-        'inventory': sample_inventory,
-        'returns': sample_returns
-    }
-    
-    # Calculate sample metrics
-    from data_processing.supply_chain_metrics import SupplyChainMetrics
-    metrics_calculator = SupplyChainMetrics()
-    metrics_dict = metrics_calculator.calculate_all_metrics(
-        sample_orders, sample_inventory, sample_returns
-    )
-    
-    # Run dashboard
-    dashboard.run_dashboard(data_dict, metrics_dict)
+
+def create_sample_people():
+    """Create sample people data as fallback"""
+    num_customers = 20
+    return pd.DataFrame({
+        'Customer ID': [f'CUST_{i}' for i in range(1, num_customers + 1)],
+        'Customer Name': [f'Customer {i}' for i in range(1, num_customers + 1)],
+        'Segment': ['Consumer', 'Corporate', 'Home Office'] * (num_customers // 3) + ['Consumer'] * (num_customers % 3),
+        'Region': ['Central', 'East', 'South', 'West'] * (num_customers // 4) + ['Central'] * (num_customers % 4)
+    })
+
+def create_sample_inventory():
+    """Create sample inventory data"""
+    # Create inventory data with consistent lengths
+    num_inventory_records = 300
+    return pd.DataFrame({
+        'date': pd.date_range('2024-01-01', periods=num_inventory_records, freq='D'),
+        'product_id': [f'PROD_{i%10}' for i in range(1, num_inventory_records + 1)],
+        'category': ['Electronics', 'Clothing', 'Home', 'Sports'] * (num_inventory_records // 4),
+        'stock_level': np.random.randint(10, 200, num_inventory_records),
+        'daily_demand': np.random.randint(1, 10, num_inventory_records),
+        'fill_rate': np.random.uniform(0.7, 1.0, num_inventory_records),
+        'annualized_turnover': np.random.uniform(2, 12, num_inventory_records),
+        'stockout_risk': np.random.choice([True, False], num_inventory_records, p=[0.1, 0.9])
+    })
 
 if __name__ == "__main__":
     main() 

@@ -7,7 +7,7 @@ from config import DATA_DIR, EXCEL_FILE_PATH, KAGGLE_DATASET_NAME
 
 class ExcelConnector:
     """
-    Handles extraction and processing of Excel data from Global Superstore dataset
+    Handles extraction and processing of Excel data from test.xlsx dataset
     """
     
     def __init__(self):
@@ -17,7 +17,7 @@ class ExcelConnector:
         
     def download_dataset(self):
         """
-        Download the Global Superstore dataset from Kaggle
+        Download the Global Superstore dataset from Kaggle (optional)
         """
         try:
             self.logger.info("Downloading Global Superstore dataset from Kaggle...")
@@ -41,13 +41,13 @@ class ExcelConnector:
     
     def load_orders_data(self):
         """
-        Load and process Orders sheet from Excel file
+        Load and process train sheet from Excel file (contains orders data)
         """
         try:
-            self.logger.info("Loading Orders data from Excel...")
+            self.logger.info("Loading Orders data from train sheet...")
             
-            # Read Orders sheet
-            orders_df = pd.read_excel(self.excel_file_path, sheet_name='Orders')
+            # Read train sheet (contains orders data)
+            orders_df = pd.read_excel(self.excel_file_path, sheet_name='train')
             
             # Data quality checks
             self._validate_orders_data(orders_df)
@@ -64,13 +64,13 @@ class ExcelConnector:
     
     def load_returns_data(self):
         """
-        Load and process Returns sheet from Excel file
+        Load and process Return sheet from Excel file
         """
         try:
-            self.logger.info("Loading Returns data from Excel...")
+            self.logger.info("Loading Returns data from Return sheet...")
             
-            # Read Returns sheet
-            returns_df = pd.read_excel(self.excel_file_path, sheet_name='Returns')
+            # Read Return sheet
+            returns_df = pd.read_excel(self.excel_file_path, sheet_name='Return')
             
             # Data quality checks
             self._validate_returns_data(returns_df)
@@ -90,7 +90,7 @@ class ExcelConnector:
         Load and process People sheet from Excel file
         """
         try:
-            self.logger.info("Loading People data from Excel...")
+            self.logger.info("Loading People data from People sheet...")
             
             # Read People sheet
             people_df = pd.read_excel(self.excel_file_path, sheet_name='People')
@@ -172,6 +172,8 @@ class ExcelConnector:
         # Calculate order value if not present
         if 'Sales' in df.columns and 'Quantity' in df.columns:
             df['Order Value'] = df['Sales'] * df['Quantity']
+        elif 'Sales' in df.columns:
+            df['Order Value'] = df['Sales']
         
         return df
     
@@ -180,8 +182,8 @@ class ExcelConnector:
         Transform Returns data for analysis
         """
         # Convert date columns
-        if 'Return Date' in df.columns:
-            df['Return Date'] = pd.to_datetime(df['Return Date'])
+        if 'Order Date' in df.columns:
+            df['Return Date'] = pd.to_datetime(df['Order Date'])
         
         return df
     
@@ -189,9 +191,11 @@ class ExcelConnector:
         """
         Transform People data for analysis
         """
-        # Ensure Person column exists
-        if 'Person' not in df.columns:
-            df['Person'] = 'Unknown'
+        # Convert date columns if they exist
+        date_columns = ['First Order Date', 'Last Order Date']
+        for col in date_columns:
+            if col in df.columns:
+                df[col] = pd.to_datetime(df[col])
         
         return df
     

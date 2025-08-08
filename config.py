@@ -7,6 +7,15 @@ load_dotenv()
 FAKE_STORE_API_BASE_URL = "https://fakestoreapi.com"
 KAGGLE_DATASET_NAME = "rohitsahoo/sales-forecasting"
 
+# Custom API Configuration
+CUSTOM_API_BASE_URL = "http://localhost:5000"
+CUSTOM_API_ENDPOINTS = {
+    "orders": "/api/orders",
+    "returns": "/api/returns", 
+    "people": "/api/people",
+    "analytics": "/api/analytics"
+}
+
 # BigQuery Configuration
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT_ID", "your-project-id")
 DATASET_ID = "supply_chain_analytics"
@@ -14,7 +23,7 @@ LOCATION = "US"
 
 # Data Sources
 DATA_DIR = "./data"
-EXCEL_FILE_PATH = f"{DATA_DIR}/Global_Superstore.xlsx"
+EXCEL_FILE_PATH = "test.xlsx"  # Updated to use test.xlsx as primary dataset
 
 # Simulation Settings
 INVENTORY_SIMULATION_DAYS = 30

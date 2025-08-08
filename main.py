@@ -15,7 +15,7 @@ import time
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from data_extraction.excel_connector import ExcelConnector
-from data_extraction.api_connector import APIConnector
+from data_extraction.api_connector import CustomAPIConnector
 from data_processing.supply_chain_metrics import SupplyChainMetrics
 from data_warehouse.bigquery_connector import BigQueryConnector
 from dashboard.streamlit_app import SupplyChainDashboard
@@ -33,7 +33,7 @@ class SupplyChainPipeline:
         
         # Initialize components
         self.excel_connector = ExcelConnector()
-        self.api_connector = APIConnector()
+        self.api_connector = CustomAPIConnector()
         self.metrics_calculator = SupplyChainMetrics()
         self.bigquery_connector = BigQueryConnector()
         self.dashboard = SupplyChainDashboard()
@@ -77,8 +77,8 @@ class SupplyChainPipeline:
         """
         self.logger.info("Starting data extraction phase")
         
-        # Extract Excel data
-        self.logger.info("Extracting Excel data...")
+        # Extract Excel data (primary source - test.xlsx)
+        self.logger.info("Extracting Excel data from test.xlsx...")
         excel_data = self.excel_connector.get_all_data()
         if excel_data:
             self.data_dict.update(excel_data)
@@ -86,14 +86,24 @@ class SupplyChainPipeline:
         else:
             self.logger.warning("No Excel data available")
         
-        # Extract API data
-        self.logger.info("Extracting API data...")
-        api_data = self.api_connector.get_all_api_data()
-        if api_data:
-            self.data_dict.update(api_data)
-            self.logger.info("API data extracted successfully")
-        else:
-            self.logger.warning("No API data available")
+        # Extract API data (optional - from custom API)
+        self.logger.info("Extracting API data from custom API...")
+        try:
+            api_data = self.api_connector.get_all_data()
+            if api_data:
+                # Merge API data with Excel data
+                for key, value in api_data.items():
+                    if value is not None:
+                        if key in self.data_dict and self.data_dict[key] is not None:
+                            # Combine data if both sources have data
+                            self.logger.info(f"Combining {key} data from Excel and API")
+                        else:
+                            self.data_dict[key] = value
+                self.logger.info("API data extracted successfully")
+            else:
+                self.logger.warning("No API data available")
+        except Exception as e:
+            self.logger.warning(f"API data extraction failed: {str(e)}")
         
         # Log extraction summary
         self.log_data_summary()
