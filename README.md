@@ -233,3 +233,9 @@ python -m streamlit run dashboard/streamlit_app.py
 
 # Access dashboard at http://localhost:8501
 ```
+<img width="1851" height="551" alt="Screenshot 2025-08-08 100730" src="https://github.com/user-attachments/assets/6f2ebe6e-d039-402b-9a73-c7f6c48e9782" />
+<img width="1794" height="709" alt="Screenshot 2025-08-08 100739" src="https://github.com/user-attachments/assets/fe03d3c0-8ff6-4392-a990-d2c8d4e49e8e" />
+<img width="1806" height="764" alt="Screenshot 2025-08-08 100747" src="https://github.com/user-attachments/assets/34676071-2c2f-4a9f-bd5f-92fc761cda86" />
+<img width="1798" height="781" alt="Screenshot 2025-08-08 100755" src="https://github.com/user-attachments/assets/507fb861-499f-4fb2-94ba-91f30502652b" />
+<img width="1780" height="339" alt="Screenshot 2025-08-08 100804" src="https://github.com/user-attachments/assets/08e1cbdb-a573-4dd5-bf67-8ffb712a9498" />
+
