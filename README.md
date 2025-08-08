@@ -71,6 +71,34 @@ python -m streamlit run dashboard/streamlit_app.py
 The dashboard will be available at: http://localhost:8501
 
 
+## 🏗️ Architecture Overview
+
+### System Architecture
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Data Sources  │    │   Processing    │    │   Storage       │
+│                 │    │                 │    │                 │
+│ • Excel Files   │───▶│ • ETL Pipeline  │───▶│ • BigQuery      │
+│ • REST APIs     │    │ • Metrics Calc  │    │ • Star Schema   │
+│ • Simulation    │    │ • Validation    │    │ • Data Marts    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                │
+                                ▼
+                       ┌─────────────────┐
+                       │  Visualization  │
+                       │                 │
+                       │ • Streamlit     │
+                       │ • Real-time KPIs│
+                       │ • Interactive   │
+                       └─────────────────┘
+```
+
+### Design Patterns Used
+1. **Pipeline Pattern**: Sequential data processing stages
+2. **Connector Pattern**: Abstract data source interfaces
+3. **Factory Pattern**: Component initialization
+4. **Observer Pattern**: Logging and monitoring
+5. **Strategy Pattern**: Different metric calculation approaches
 ## 📁 Project Structure
 
 ```
